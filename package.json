@@ -1,0 +1,32 @@
+{
+  "name": "trivia",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && tsc -p worker/tsconfig.json --noEmit && cf build",
+    "typecheck": "tsc --noEmit && tsc -p worker/tsconfig.json --noEmit",
+    "typecheck:worker": "tsc -p worker/tsconfig.json --noEmit",
+    "deploy": "cf deploy",
+    "preview": "vite preview",
+    "test": "vitest run --config vitest.config.ts"
+  },
+  "dependencies": {
+    "country-flag-icons": "^1.5.21",
+    "lucide-react": "^0.511.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "^2.0.0-rc.3",
+    "@cloudflare/workers-types": "latest",
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "@vitejs/plugin-react": "^6.3.0",
+    "cf": "latest",
+    "typescript": "^5.8.3",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.1"
+  }
+}

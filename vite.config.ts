@@ -1,0 +1,12 @@
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { cloudflare } from '@cloudflare/vite-plugin';
+
+export default defineConfig(({ command }) => ({
+  base: command === 'build' ? '/trivia/' : '/',
+  plugins: [react(), cloudflare()],
+  server: {
+    port: 5174,
+    strictPort: true,
+  },
+}));

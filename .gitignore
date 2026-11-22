@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.cf/
+.cloudflare/
+.wrangler/
+worker/.cloudflare/
+.env
+.env.local
+*.log
