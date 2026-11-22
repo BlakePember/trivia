@@ -19,9 +19,24 @@ import { SCIENCE_STATIC_QUESTIONS } from './data/scienceQuestions.js';
 import { HISTORY_STATIC_QUESTIONS } from './data/historyQuestions.js';
 import { CULTURE_STATIC_QUESTIONS } from './data/cultureQuestions.js';
 import { GENERAL_STATIC_QUESTIONS } from './data/generalQuestions.js';
+import {
+  CURRENT_EVENTS_META,
+  CURRENT_EVENTS_QUESTIONS,
+} from './data/currentEventsQuestions.js';
 import type { StaticQuestionSeed } from './data/staticTypes.js';
 
+export { CURRENT_EVENTS_META };
+
 export const CATEGORIES: CategoryDefinition[] = [
+  {
+    id: 'current-events',
+    title: 'Current Events',
+    tagline: `Weekly Edition · Updated ${CURRENT_EVENTS_META.updatedAt}`,
+    description:
+      'Fresh weekly trivia covering breaking world news, space & science breakthroughs, sports championships, and pop culture — updated every Tuesday.',
+    accent: '#fb7185',
+    featured: true,
+  },
   {
     id: 'geography',
     title: 'Geography',
@@ -66,6 +81,19 @@ export const CATEGORIES: CategoryDefinition[] = [
 ];
 
 export const QUIZZES: QuizDefinition[] = [
+  // ======================== CURRENT EVENTS (WEEKLY EDITION) ========================
+  {
+    id: 'cur-weekly',
+    category: 'current-events',
+    title: 'Weekly Current Events',
+    shortTitle: 'This Week',
+    description: `${CURRENT_EVENTS_META.weekOf} — ${CURRENT_EVENTS_META.headlineSummary}`,
+    icon: 'newspaper',
+    supportsTypeIn: true,
+    estimatedCount: CURRENT_EVENTS_QUESTIONS.length,
+    featured: true,
+  },
+
   // ======================== GEOGRAPHY (6 SUB-QUIZZES) ========================
   {
     id: 'geo-flags',
@@ -318,6 +346,7 @@ export const QUIZZES: QuizDefinition[] = [
 ];
 
 export const CATEGORY_MIX_IDS: Record<CategoryId, string> = {
+  'current-events': 'cur-all',
   geography: 'geo-all',
   science: 'sci-all',
   history: 'hist-all',
@@ -326,6 +355,7 @@ export const CATEGORY_MIX_IDS: Record<CategoryId, string> = {
 };
 
 const ALL_STATIC_SEEDS: StaticQuestionSeed[] = [
+  ...CURRENT_EVENTS_QUESTIONS,
   ...GEO_STATIC_QUESTIONS,
   ...SCIENCE_STATIC_QUESTIONS,
   ...HISTORY_STATIC_QUESTIONS,

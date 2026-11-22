@@ -14,6 +14,7 @@ import {
   Microscope,
   Mountain,
   Music,
+  Newspaper,
   Orbit,
   Palette,
   Scroll,
@@ -54,6 +55,8 @@ export const QuizIcon: React.FC<QuizIconProps> = ({ name, size = 18 }) => {
       return <Film size={size} />;
     case 'music':
       return <Music size={size} />;
+    case 'newspaper':
+      return <Newspaper size={size} />;
     case 'trophy':
       return <Trophy size={size} />;
     case 'cpu':

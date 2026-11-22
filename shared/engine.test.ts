@@ -5,6 +5,10 @@ import { US_STATES } from './data/usStates.js';
 import { US_PRESIDENTS } from './data/usPresidents.js';
 import { ELEMENTS } from './data/elements.js';
 import {
+  CURRENT_EVENTS_META,
+  CURRENT_EVENTS_QUESTIONS,
+} from './data/currentEventsQuestions.js';
+import {
   CATEGORIES,
   CATEGORY_MIX_IDS,
   QUIZZES,
@@ -56,6 +60,23 @@ describe('Trivia Data Integrity', () => {
     expect(nums.size).toBe(ELEMENTS.length);
     expect(syms.size).toBe(ELEMENTS.length);
     expect(ELEMENTS.length).toBeGreaterThanOrEqual(40);
+  });
+
+  it('contains a valid weekly Current Events edition with unique IDs and 4 distinct options', () => {
+    expect(CURRENT_EVENTS_META.updatedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(CURRENT_EVENTS_META.weekOf.trim().length).toBeGreaterThan(4);
+    expect(CURRENT_EVENTS_QUESTIONS.length).toBeGreaterThanOrEqual(10);
+
+    const ids = new Set<string>();
+    for (const q of CURRENT_EVENTS_QUESTIONS) {
+      expect(ids.has(q.id), `Duplicate current events ID ${q.id}`).toBe(false);
+      ids.add(q.id);
+      expect(q.category).toBe('current-events');
+      expect(q.quizId).toBe('cur-weekly');
+      const allOpts = new Set([q.answer, ...q.distractors].map((s) => s.trim().toLowerCase()));
+      expect(allOpts.size, `Duplicate answer/distractor in ${q.id}`).toBe(4);
+      expect(q.explanation.trim().length).toBeGreaterThan(15);
+    }
   });
 });
 

@@ -1,4 +1,10 @@
-export type CategoryId = 'geography' | 'science' | 'history' | 'culture' | 'general';
+export type CategoryId =
+  | 'current-events'
+  | 'geography'
+  | 'science'
+  | 'history'
+  | 'culture'
+  | 'general';
 
 export type Difficulty = 'easy' | 'medium' | 'hard';
 export type DifficultyFilter = 'all' | Difficulty;

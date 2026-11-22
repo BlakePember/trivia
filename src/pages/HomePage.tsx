@@ -16,6 +16,7 @@ import {
 import {
   CATEGORIES,
   CATEGORY_MIX_IDS,
+  CURRENT_EVENTS_META,
   QUIZZES,
   generateQuizQuestions,
   getQuizzesByCategory,
@@ -376,17 +377,24 @@ export const HomePage: React.FC = () => {
           <div className="tv-section-actions">
             <button
               type="button"
+              className="tv-btn tv-btn-secondary tv-btn-sm"
+              onClick={() => openPractice({ categoryId: 'current-events', quizId: 'cur-weekly' })}
+            >
+              Current Events ({CURRENT_EVENTS_META.updatedAt}) →
+            </button>
+            <button
+              type="button"
               className="tv-btn tv-btn-ghost tv-btn-sm"
               onClick={() => openPractice({ categoryId: 'history', quizId: 'hist-presidents' })}
             >
-              Practice US Presidents →
+              US Presidents →
             </button>
             <button
               type="button"
               className="tv-btn tv-btn-ghost tv-btn-sm"
               onClick={() => openPractice({ categoryId: 'culture', quizId: 'cult-holidays' })}
             >
-              Practice Holidays →
+              Holidays →
             </button>
           </div>
         </div>

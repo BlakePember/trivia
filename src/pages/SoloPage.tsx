@@ -709,11 +709,11 @@ export const SoloPage: React.FC = () => {
               <span className="tv-quick-label">Quick picks:</span>
               {[
                 { id: 'mixed', label: 'Mixed Trivia (All)' },
+                { id: 'cur-weekly', label: 'Current Events' },
                 { id: 'geo-flags', label: 'World Flags' },
                 { id: 'geo-capitals', label: 'World Capitals' },
                 { id: 'hist-presidents', label: 'All US Presidents' },
                 { id: 'cult-holidays', label: 'Holidays' },
-                { id: 'geo-all', label: 'All Geography' },
               ].map((item) => (
                 <button
                   key={item.id}
