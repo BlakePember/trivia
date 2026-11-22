@@ -1,0 +1,54 @@
+name: CI & Deploy
+
+on:
+  pull_request:
+    branches: ["main"]
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci-and-deploy:
+    name: Test, Build & Deploy
+    runs-on: ubuntu-latest
+    env:
+      CF_SEND_TELEMETRY: "false"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Typecheck & build
+        run: npm run build
+
+      - name: Validate Cloudflare deploy (dry run)
+        run: npx cf deploy --prebuilt --mode production --dry-run
+
+      - name: Deploy to Cloudflare Workers
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::notice::Skipping Cloudflare deploy because CLOUDFLARE_API_TOKEN secret is not configured yet."
+            exit 0
+          fi
+          npx cf deploy --prebuilt --mode production

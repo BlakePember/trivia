@@ -9,20 +9,6 @@
     />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>Trivia — Solo, Practice &amp; Live Multiplayer</title>
-    <script>
-      // Restore clean SPA routes redirected via GitHub Pages 404.html (e.g. /trivia/room/ABC123)
-      (function () {
-        try {
-          var saved = sessionStorage.getItem('trivia_redirect');
-          if (saved) {
-            sessionStorage.removeItem('trivia_redirect');
-            if (saved.indexOf('/trivia') === 0) {
-              history.replaceState(null, '', saved);
-            }
-          }
-        } catch (e) {}
-      })();
-    </script>
   </head>
   <body>
     <div id="root"></div>
@@ -54,10 +40,10 @@
               '<h2 style="margin:0 0 8px;">Trivia Dev Server Not Running</h2>' +
               '<p style="margin:0 0 14px;color:#a7a1be;">Trivia is a React + Cloudflare Durable Objects app, so VS Code Live Server cannot compile <code>.tsx</code> files directly.</p>' +
               '<p style="margin:0 0 14px;">Run this command in your terminal, then click Retry:</p>' +
-              '<pre style="background:#12111a;padding:10px 12px;border-radius:8px;overflow:auto;color:#b99bff;">cd trivia\nnpm run dev</pre>' +
+              '<pre style="background:#12111a;padding:10px 12px;border-radius:8px;overflow:auto;color:#b99bff;">npm run dev</pre>' +
               '<div style="display:flex;gap:10px;margin-top:16px;">' +
               '<button onclick="location.reload()" style="padding:9px 14px;border-radius:9px;border:none;background:#b99bff;color:#140f24;font-weight:700;cursor:pointer;">Retry Connection</button>' +
-              '<a href="../" style="padding:9px 14px;border-radius:9px;border:1px solid #443e63;color:#f2effa;text-decoration:none;font-weight:600;">← Back to Portfolio</a>' +
+              '<a href="https://blakepember.net/" style="padding:9px 14px;border-radius:9px;border:1px solid #443e63;color:#f2effa;text-decoration:none;font-weight:600;">← Back to Portfolio</a>' +
               '</div></div>';
           });
       })();

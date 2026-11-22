@@ -8,6 +8,7 @@ export default defineConfig({
     entrypoint,
     compatibilityDate: '2026-11-21',
     workersDev: true,
+    domains: ['trivia.blakepember.net'],
     assets: {
       notFoundHandling: 'single-page-application',
       runWorkerFirst: ['/api/*', '/ws/*'],

@@ -10,8 +10,6 @@ Interactive trivia web game featuring **Single Player** (Classic Run, Blitz 60s,
   - `TriviaRoomDO` ([worker/roomDO.ts](./worker/roomDO.ts)) — One isolated SQLite-backed Durable Object per room code (`getByName(code)`), handling authoritative server-side answer validation (answers never leaked during active rounds), Durable Object Alarms for synchronized timers & optional AI bots, live room chat, and final podiums.
 
 ## Running Locally
-From inside the `trivia/` folder:
-
 ```bash
 npm install
 npm run dev
@@ -27,5 +25,6 @@ npm run build
 ```
 
 ## Production Deployment
-- **Backend (Cloudflare Workers + Durable Objects):** Configured in [cloudflare.config.ts](./cloudflare.config.ts) as `trivia-api`. To deploy from your terminal, sign in once with `npx cf auth login` and run `npm run deploy`.
-- **Frontend (GitHub Pages):** [.github/workflows/static.yml](../.github/workflows/static.yml) automatically builds `trivia/` and deploys it to `/trivia/` pointing at `https://trivia-api.blakepember.workers.dev` (overridable via the `TRIVIA_SERVER_URL` GitHub Actions repository variable).
+- **Frontend + Backend (Cloudflare Workers + Durable Objects):** Hosted together on Cloudflare Workers at `https://trivia.blakepember.net` (Worker `trivia-api`, configured in [cloudflare.config.ts](./cloudflare.config.ts)).
+- **Manual deploy:** Sign in once with `npx cf auth login` and run `npm run deploy`.
+- **Automatic deploy:** [.github/workflows/ci.yml](./.github/workflows/ci.yml) runs unit tests and builds on every PR/push, and deploys to Cloudflare Workers on pushes to `main` when `CLOUDFLARE_API_TOKEN` is configured in GitHub repository secrets.

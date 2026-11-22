@@ -51,7 +51,7 @@ export const Navbar: React.FC = () => {
       <div className="tv-navbar-inner">
         <div className="tv-brand-cluster">
           <a
-            href="../"
+            href="https://blakepember.net/"
             className="tv-back-link"
             title="Back to Blake Pember's Portfolio"
             aria-label="Back to Portfolio"
