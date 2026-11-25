@@ -10,7 +10,13 @@ import {
   type TriviaQuestion,
 } from '../shared/types.js';
 import type { RoomClientMessage, RoomServerMessage } from '../shared/protocol.js';
-import { generateQuizQuestions, getQuizDisplayTitle, toPublicQuestion } from '../shared/catalog.js';
+import {
+  appendQuestionHistory,
+  generateQuizQuestions,
+  getQuizDisplayTitle,
+  mergePlayerQuestionHistories,
+  toPublicQuestion,
+} from '../shared/catalog.js';
 import { calculateAnswerScore } from '../shared/scoring.js';
 import type { Env } from './env.js';
 
@@ -212,6 +218,7 @@ export class TriviaRoomDO extends DurableObject<Env> {
     this.writeJson('questions', []);
     this.writeJson('answers', []);
     this.writeJson('botPlan', []);
+    this.writeJson('recentQuestionIds', []);
 
     if (input.autoStartParticipants && input.autoStartParticipants.length >= 2) {
       await this.startMatchInternal(room);
@@ -713,13 +720,29 @@ export class TriviaRoomDO extends DurableObject<Env> {
   // --- Match Progression Helpers ---
 
   private async startMatchInternal(room: RoomState): Promise<void> {
+    const humanPlayerIds = room.players.filter((p) => !p.isBot).map((p) => p.playerId);
+    const roomRecentIds = this.readJson<string[]>('recentQuestionIds') ?? [];
+    let crossRoomIds: string[] = [];
+    if (humanPlayerIds.length > 0) {
+      try {
+        crossRoomIds = await this.env.LOBBY.getByName('global').getRecentQuestionIds(humanPlayerIds);
+      } catch {
+        // Best-effort cross-room history lookup; fall back to room-level history
+      }
+    }
+    const excludeIds = mergePlayerQuestionHistories([crossRoomIds, roomRecentIds], 600);
+
     const questions = generateQuizQuestions({
       quizId: room.settings.quizId,
       count: room.settings.questionCount,
       difficulty: room.settings.difficulty,
       region: room.settings.region,
       direction: 'mixed',
+      excludeIds,
     });
+
+    const pickedIds = questions.map((q) => q.id);
+    const nextRoomRecentIds = appendQuestionHistory(roomRecentIds, pickedIds, 500);
 
     const now = Date.now();
     room.phase = 'countdown';
@@ -750,9 +773,18 @@ export class TriviaRoomDO extends DurableObject<Env> {
     );
 
     this.writeJson('questions', questions);
+    this.writeJson('recentQuestionIds', nextRoomRecentIds);
     this.writeJson('answers', []);
     this.writeJson('botPlan', []);
     this.writeJson('room', room);
+
+    if (humanPlayerIds.length > 0 && pickedIds.length > 0) {
+      try {
+        await this.env.LOBBY.getByName('global').recordPlayedQuestions(humanPlayerIds, pickedIds);
+      } catch {
+        // Best-effort cross-room history persistence
+      }
+    }
 
     await this.ctx.storage.setAlarm(room.phaseEndsAt);
     await this.syncLobbySummary(room);

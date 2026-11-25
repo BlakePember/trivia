@@ -1,21 +1,23 @@
 import React from 'react';
 import type { FlagComponent } from 'country-flag-icons/react/3x2';
 import {
-  AE, AL, AR, AT, AU, BB, BD, BE, BG, BO, BR, BS, BT, BW, CA, CH, CL, CN, CO, CR,
-  CU, CY, CZ, DE, DK, DO, DZ, EC, EE, EG, ES, ET, FI, FJ, FR, GB, GE, GH, GR, GT,
-  HR, HU, ID, IE, IL, IN, IS, IT, JM, JO, JP, KE, KH, KR, KZ, LK, LT, LU, LV, MA,
-  MG, MN, MT, MX, MY, MZ, NA, NG, NL, NO, NP, NZ, PA, PE, PG, PH, PK, PL, PT, PY,
-  QA, RO, RS, RU, RW, SA, SC, SE, SG, SI, SK, SN, TH, TN, TO, TR, TZ, UA, UG, US,
-  UY, UZ, VE, VN, WS, ZA,
+  AD, AE, AL, AM, AR, AT, AU, AZ, BA, BB, BD, BE, BG, BO, BR, BS, BT, BW, BZ, CA,
+  CH, CI, CL, CM, CN, CO, CR, CU, CY, CZ, DE, DK, DO, DZ, EC, EE, EG, ES, ET, FI,
+  FJ, FR, GB, GE, GH, GR, GT, HN, HR, HU, ID, IE, IL, IN, IS, IT, JM, JO, JP, KE,
+  KH, KR, KW, KZ, LA, LB, LK, LT, LU, LV, MA, MC, MD, ME, MG, MK, MN, MT, MV, MX,
+  MY, MZ, NA, NG, NI, NL, NO, NP, NZ, OM, PA, PE, PG, PH, PK, PL, PT, PW, PY, QA,
+  RO, RS, RU, RW, SA, SC, SE, SG, SI, SK, SN, SV, TH, TN, TO, TR, TT, TZ, UA, UG,
+  US, UY, UZ, VE, VN, VU, WS, ZA, ZM, ZW,
 } from 'country-flag-icons/react/3x2';
 
 export const SUPPORTED_FLAGS: Record<string, FlagComponent> = {
-  AE, AL, AR, AT, AU, BB, BD, BE, BG, BO, BR, BS, BT, BW, CA, CH, CL, CN, CO, CR,
-  CU, CY, CZ, DE, DK, DO, DZ, EC, EE, EG, ES, ET, FI, FJ, FR, GB, GE, GH, GR, GT,
-  HR, HU, ID, IE, IL, IN, IS, IT, JM, JO, JP, KE, KH, KR, KZ, LK, LT, LU, LV, MA,
-  MG, MN, MT, MX, MY, MZ, NA, NG, NL, NO, NP, NZ, PA, PE, PG, PH, PK, PL, PT, PY,
-  QA, RO, RS, RU, RW, SA, SC, SE, SG, SI, SK, SN, TH, TN, TO, TR, TZ, UA, UG, US,
-  UY, UZ, VE, VN, WS, ZA,
+  AD, AE, AL, AM, AR, AT, AU, AZ, BA, BB, BD, BE, BG, BO, BR, BS, BT, BW, BZ, CA,
+  CH, CI, CL, CM, CN, CO, CR, CU, CY, CZ, DE, DK, DO, DZ, EC, EE, EG, ES, ET, FI,
+  FJ, FR, GB, GE, GH, GR, GT, HN, HR, HU, ID, IE, IL, IN, IS, IT, JM, JO, JP, KE,
+  KH, KR, KW, KZ, LA, LB, LK, LT, LU, LV, MA, MC, MD, ME, MG, MK, MN, MT, MV, MX,
+  MY, MZ, NA, NG, NI, NL, NO, NP, NZ, OM, PA, PE, PG, PH, PK, PL, PT, PW, PY, QA,
+  RO, RS, RU, RW, SA, SC, SE, SG, SI, SK, SN, SV, TH, TN, TO, TR, TT, TZ, UA, UG,
+  US, UY, UZ, VE, VN, VU, WS, ZA, ZM, ZW,
 };
 
 interface CountryFlagProps {

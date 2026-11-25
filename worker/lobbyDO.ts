@@ -7,6 +7,7 @@ import {
   type RoomVisibility,
 } from '../shared/types.js';
 import type { LobbyClientMessage, LobbyServerMessage } from '../shared/protocol.js';
+import { appendQuestionHistory, mergePlayerQuestionHistories } from '../shared/catalog.js';
 import type { Env } from './env.js';
 
 interface LobbyAttachment {
@@ -17,6 +18,9 @@ interface LobbyAttachment {
 
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const ROOM_TTL_MS = 3 * 60 * 60 * 1000;
+const HISTORY_TTL_MS = 14 * 24 * 60 * 60 * 1000;
+const MAX_PLAYER_HISTORY_IDS = 400;
+const MAX_MERGED_HISTORY_IDS = 600;
 
 function secureRandomIndex(max: number): number {
   const arr = new Uint32Array(1);
@@ -78,6 +82,13 @@ export class TriviaLobbyDO extends DurableObject<Env> {
           updated_at INTEGER NOT NULL
         )
       `);
+      this.ctx.storage.sql.exec(`
+        CREATE TABLE IF NOT EXISTS player_question_history (
+          player_id TEXT PRIMARY KEY,
+          ids_json TEXT NOT NULL,
+          updated_at INTEGER NOT NULL
+        )
+      `);
     });
   }
 
@@ -121,6 +132,77 @@ export class TriviaLobbyDO extends DurableObject<Env> {
   async removeRoomSummary(code: string): Promise<void> {
     this.ctx.storage.sql.exec('DELETE FROM public_rooms WHERE code = ?', code);
     await this.broadcastPublicRooms();
+  }
+
+  async getRecentQuestionIds(playerIds: string[]): Promise<string[]> {
+    const unique = Array.from(
+      new Set(playerIds.map((id) => id.trim()).filter((id) => id.length > 0))
+    ).slice(0, 16);
+    if (unique.length === 0) return [];
+
+    const cutoff = Date.now() - HISTORY_TTL_MS;
+    this.ctx.storage.sql.exec(
+      'DELETE FROM player_question_history WHERE updated_at < ?',
+      cutoff
+    );
+
+    const histories: string[][] = [];
+    for (const pid of unique) {
+      const rows = this.ctx.storage.sql
+        .exec<{ ids_json: string }>(
+          'SELECT ids_json FROM player_question_history WHERE player_id = ?',
+          pid
+        )
+        .toArray();
+      if (rows.length === 0) continue;
+      try {
+        const parsed = JSON.parse(rows[0].ids_json);
+        if (Array.isArray(parsed)) {
+          histories.push(parsed.filter((x): x is string => typeof x === 'string'));
+        }
+      } catch {
+        // Ignore corrupted history row
+      }
+    }
+
+    return mergePlayerQuestionHistories(histories, MAX_MERGED_HISTORY_IDS);
+  }
+
+  async recordPlayedQuestions(playerIds: string[], questionIds: string[]): Promise<void> {
+    const uniquePlayers = Array.from(
+      new Set(playerIds.map((id) => id.trim()).filter((id) => id.length > 0))
+    ).slice(0, 16);
+    const cleanQuestions = questionIds.map((id) => id.trim()).filter((id) => id.length > 0);
+    if (uniquePlayers.length === 0 || cleanQuestions.length === 0) return;
+
+    const now = Date.now();
+    for (const pid of uniquePlayers) {
+      let existing: string[] = [];
+      const rows = this.ctx.storage.sql
+        .exec<{ ids_json: string }>(
+          'SELECT ids_json FROM player_question_history WHERE player_id = ?',
+          pid
+        )
+        .toArray();
+      if (rows.length > 0) {
+        try {
+          const parsed = JSON.parse(rows[0].ids_json);
+          if (Array.isArray(parsed)) {
+            existing = parsed.filter((x): x is string => typeof x === 'string');
+          }
+        } catch {
+          existing = [];
+        }
+      }
+
+      const updated = appendQuestionHistory(existing, cleanQuestions, MAX_PLAYER_HISTORY_IDS);
+      this.ctx.storage.sql.exec(
+        'INSERT OR REPLACE INTO player_question_history (player_id, ids_json, updated_at) VALUES (?, ?, ?)',
+        pid,
+        JSON.stringify(updated),
+        now
+      );
+    }
   }
 
   // --- WebSocket Hibernation lifecycle ---

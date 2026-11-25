@@ -226,4 +226,122 @@ export const CURRENT_EVENTS_QUESTIONS: StaticQuestionSeed[] = [
       'Miley Cyrus and Maxx Morando married on November 21, 2026 at Frank Sinatra’s historic Twin Palms Estate in Palm Springs, with Flaming Lips frontman Wayne Coyne officiating.',
     typeable: true,
   },
+  {
+    id: 'cur-2026-11-24-15',
+    category: 'current-events',
+    quizId: 'cur-weekly',
+    difficulty: 'medium',
+    promptLabel: 'SPACE EXPLORATION · NOV 2026',
+    prompt:
+      'Arriving at the binary asteroid system Didymos and Dimorphos in November 2026, which European Space Agency spacecraft beamed back close-up views of NASA’s 2022 DART impact crater?',
+    answer: 'Hera',
+    aliases: ['ESA Hera'],
+    distractors: ['Rosetta', 'Juice', 'BepiColombo'],
+    explanation:
+      'ESA’s Hera spacecraft arrived at Dimorphos to perform a post-impact planetary defense survey, revealing a stadium-sized crater and orbiting boulders.',
+    typeable: true,
+  },
+  {
+    id: 'cur-2026-11-24-16',
+    category: 'current-events',
+    quizId: 'cur-weekly',
+    difficulty: 'easy',
+    promptLabel: 'VIDEO GAMES · NOV 2026',
+    prompt:
+      'Which hugely anticipated Rockstar Games open-world release shattered entertainment history in November 2026 by generating a reported $3.8 billion in day-one sales?',
+    answer: 'Grand Theft Auto VI',
+    aliases: ['GTA VI', 'GTA 6', 'Grand Theft Auto 6'],
+    distractors: ['The Elder Scrolls VI', 'Red Dead Redemption 3', 'Half-Life 3'],
+    explanation:
+      'Grand Theft Auto VI set an all-time entertainment launch record on its first day, eclipsing previous box-office and video-game debuts worldwide.',
+    typeable: true,
+  },
+  {
+    id: 'cur-2026-11-24-17',
+    category: 'current-events',
+    quizId: 'cur-weekly',
+    difficulty: 'easy',
+    promptLabel: 'SPACE MILESTONE · NOV 2026',
+    prompt:
+      'On November 18, 2026, which legendary NASA spacecraft officially crossed the historic 1 light-day distance milestone (~16 billion miles) from Earth?',
+    answer: 'Voyager 1',
+    distractors: ['Voyager 2', 'New Horizons', 'Pioneer 10'],
+    explanation:
+      'Nearly 50 years after its 1977 launch, Voyager 1 became the first human-made object to reach 1 light-day from Earth — meaning radio commands now take a full 24 hours one way.',
+    typeable: true,
+  },
+  {
+    id: 'cur-2026-11-24-18',
+    category: 'current-events',
+    quizId: 'cur-weekly',
+    difficulty: 'medium',
+    promptLabel: 'INTERNATIONAL LAW · NOV 2026',
+    prompt:
+      'In a landmark November 19, 2026 ruling, the International Court of Justice (ICJ) held which Southeast Asian nation responsible under the 1948 Genocide Convention?',
+    answer: 'Myanmar',
+    aliases: ['Burma'],
+    distractors: ['Cambodia', 'Thailand', 'Laos'],
+    explanation:
+      'In a 9–6 decision, the ICJ found Myanmar responsible for committing genocide against the Rohingya Muslim minority in Rakhine State — the first time the court held a state directly responsible under the convention.',
+    typeable: true,
+  },
+  {
+    id: 'cur-2026-11-24-19',
+    category: 'current-events',
+    quizId: 'cur-weekly',
+    difficulty: 'medium',
+    promptLabel: 'ASTRONOMY · NOV 2026',
+    prompt:
+      'In November 2026, astronomers announced that the James Webb Space Telescope captured the aftermath of a rare star-swallowing merger ("Bao") in which neighboring galaxy?',
+    answer: 'Andromeda Galaxy',
+    aliases: ['Andromeda', 'M31'],
+    distractors: ['Triangulum Galaxy', 'Whirlpool Galaxy', 'Sombrero Galaxy'],
+    explanation:
+      'JWST observed the glowing dust shell left behind after a giant supergiant star engulfed its smaller companion inside the Andromeda Galaxy.',
+    typeable: true,
+  },
+  {
+    id: 'cur-2026-11-24-20',
+    category: 'current-events',
+    quizId: 'cur-weekly',
+    difficulty: 'medium',
+    promptLabel: 'GLOBAL TECH POLICY · NOV 2026',
+    prompt:
+      'In which Swiss city did November 2026 UN talks seeking a legally binding treaty on AI-powered autonomous weapons stall without a binding pact?',
+    answer: 'Geneva',
+    distractors: ['Zurich', 'Vienna', 'The Hague'],
+    explanation:
+      'Delegates at the UN Convention on Certain Conventional Weapons (CCW) in Geneva ended week-long negotiations with only a non-binding mandate.',
+    typeable: true,
+  },
+  {
+    id: 'cur-2026-11-24-21',
+    category: 'current-events',
+    quizId: 'cur-weekly',
+    difficulty: 'hard',
+    promptLabel: 'SPACE MISSIONS · NOV 2026',
+    prompt:
+      'Which 20+ year NASA gamma-ray burst observatory safely concluded its mission with Earth atmospheric re-entry in November 2026?',
+    answer: 'Neil Gehrels Swift Observatory',
+    aliases: ['Swift', 'Swift Observatory'],
+    distractors: ['Chandra X-ray Observatory', 'Spitzer Space Telescope', 'Kepler Space Telescope'],
+    explanation:
+      'Originally designed for a two-year mission, NASA’s Neil Gehrels Swift Observatory studied cosmic gamma-ray bursts and transient events for over two decades.',
+    typeable: true,
+  },
+  {
+    id: 'cur-2026-11-24-22',
+    category: 'current-events',
+    quizId: 'cur-weekly',
+    difficulty: 'easy',
+    promptLabel: 'ASTRONOMY · NOV 2026',
+    prompt:
+      'What traditional name is given to November’s full moon — appearing as a bright supermoon on November 24, 2026?',
+    answer: 'Beaver Moon',
+    aliases: ['Full Beaver Moon', 'Beaver Supermoon', 'Full Beaver Supermoon'],
+    distractors: ['Harvest Moon', 'Hunter’s Moon', 'Cold Moon'],
+    explanation:
+      'Named for the season when beavers finish building their winter lodges and dams, November’s 2026 full moon occurred near perigee as a supermoon.',
+    typeable: true,
+  },
 ];
