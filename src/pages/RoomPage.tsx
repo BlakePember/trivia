@@ -488,6 +488,33 @@ export const RoomPage: React.FC = () => {
               </div>
             </div>
 
+            <div className="tv-field">
+              <label>
+                Max Players ({room.players.length}/{room.settings.maxPlayers})
+              </label>
+              <div className="tv-segmented">
+                {[2, 3, 4, 5, 6, 7, 8].map((n) => {
+                  const belowCurrent = n < room.players.length;
+                  return (
+                    <button
+                      key={n}
+                      type="button"
+                      disabled={!isHost || belowCurrent}
+                      title={
+                        belowCurrent
+                          ? `Already ${room.players.length} players in room`
+                          : `Set max players to ${n}`
+                      }
+                      className={room.settings.maxPlayers === n ? 'active' : ''}
+                      onClick={() => void updateRoomSettings({ maxPlayers: n })}
+                    >
+                      {n}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <div className="tv-info-callout">
               <Zap size={15} />
               <span>
@@ -553,7 +580,7 @@ export const RoomPage: React.FC = () => {
                   onClick={() => void rematchRoom()}
                 >
                   <Settings size={16} />
-                  <span>Change Quiz</span>
+                  <span>Room Settings</span>
                 </button>
               </>
             )}

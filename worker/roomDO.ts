@@ -411,7 +411,7 @@ export class TriviaRoomDO extends DurableObject<Env> {
       if (next.secondsPerQuestion && [10, 12, 15, 20, 30].includes(next.secondsPerQuestion)) {
         room.settings.secondsPerQuestion = next.secondsPerQuestion;
       }
-      if (typeof next.maxPlayers === 'number') {
+      if (typeof next.maxPlayers === 'number' && Number.isFinite(next.maxPlayers)) {
         room.settings.maxPlayers = Math.max(
           Math.max(2, room.players.length),
           Math.min(8, Math.round(next.maxPlayers))
