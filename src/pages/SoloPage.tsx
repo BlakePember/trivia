@@ -18,11 +18,13 @@ import {
   CATEGORIES,
   CATEGORY_MIX_IDS,
   QUIZZES,
+  appendQuestionHistory,
   generateQuizQuestions,
   getQuizDisplayTitle,
   getQuizzesByCategory,
 } from '../../shared/catalog';
 import { calculateAnswerScore, getPerformanceGrade } from '../../shared/scoring';
+import { loadRecentQuestionIds, saveRecentQuestionIds } from '../utils/storage';
 import type {
   CategoryId,
   ContinentFilter,
@@ -150,6 +152,7 @@ export const SoloPage: React.FC = () => {
 
       const targetQuizId = overrideQuizId ?? quizId;
       const countToGenerate = mode === 'classic' ? questionCount : 60;
+      const recentIds = loadRecentQuestionIds();
       const generated =
         customQuestions ??
         generateQuizQuestions({
@@ -159,7 +162,18 @@ export const SoloPage: React.FC = () => {
           difficulty,
           region: supportsRegion ? region : 'all',
           direction: 'mixed',
+          excludeIds: recentIds,
         });
+
+      if (!customQuestions && generated.length > 0) {
+        saveRecentQuestionIds(
+          appendQuestionHistory(
+            recentIds,
+            generated.map((q) => q.id),
+            300
+          )
+        );
+      }
 
       finishedRef.current = false;
       setQuestions(generated);
@@ -214,6 +228,11 @@ export const SoloPage: React.FC = () => {
         return;
       }
       // Endless replenishment for Blitz / Survival
+      const recentIds = appendQuestionHistory(
+        loadRecentQuestionIds(),
+        questions.map((q) => q.id),
+        300
+      );
       const more = generateQuizQuestions({
         quizId,
         count: 30,
@@ -221,12 +240,19 @@ export const SoloPage: React.FC = () => {
         difficulty,
         region: supportsRegion ? region : 'all',
         direction: 'mixed',
-        excludeIds: questions.slice(-25).map((q) => q.id),
+        excludeIds: recentIds,
       });
       if (more.length === 0) {
         finishRun(score, bestStreak, review);
         return;
       }
+      saveRecentQuestionIds(
+        appendQuestionHistory(
+          recentIds,
+          more.map((q) => q.id),
+          300
+        )
+      );
       setQuestions((prev) => [...prev, ...more]);
     }
 

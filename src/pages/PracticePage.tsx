@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -21,6 +21,7 @@ import {
   CATEGORIES,
   CATEGORY_MIX_IDS,
   QUIZZES,
+  appendQuestionHistory,
   generateQuizQuestions,
   getCategoryById,
   getQuizById,
@@ -96,6 +97,7 @@ export const PracticePage: React.FC = () => {
   const [newlyMastered, setNewlyMastered] = useState(0);
   const [results, setResults] = useState<PracticeResult[]>([]);
   const [timerSec, setTimerSec] = useState(15);
+  const recentPracticeIdsRef = useRef<string[]>([]);
 
   useEffect(() => {
     if (practiceTarget) {
@@ -184,7 +186,16 @@ export const PracticePage: React.FC = () => {
               ? region
               : 'all',
           direction: activeQuizDef?.supportsDirection ? direction : 'standard',
+          excludeIds: recentPracticeIdsRef.current,
         });
+
+      if (!overrideQuestions && qs.length > 0) {
+        recentPracticeIdsRef.current = appendQuestionHistory(
+          recentPracticeIdsRef.current,
+          qs.map((q) => q.id),
+          300
+        );
+      }
 
       setQuestions(qs);
       setIndex(0);

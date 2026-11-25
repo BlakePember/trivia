@@ -330,7 +330,7 @@ export const LobbyPage: React.FC = () => {
           <div className="tv-field">
             <label>Max Players ({maxPlayers})</label>
             <div className="tv-segmented">
-              {[2, 4, 6, 8].map((n) => (
+              {[2, 3, 4, 5, 6, 7, 8].map((n) => (
                 <button
                   key={n}
                   type="button"

@@ -23,9 +23,16 @@ import {
   CURRENT_EVENTS_META,
   CURRENT_EVENTS_QUESTIONS,
 } from './data/currentEventsQuestions.js';
+import { RECENT_HEADLINES_QUESTIONS } from './data/recentHeadlinesQuestions.js';
 import type { StaticQuestionSeed } from './data/staticTypes.js';
 
 export { CURRENT_EVENTS_META };
+
+const DISTINCTIVE_CURRENCY_CODES: readonly string[] = [
+  'GB', 'CH', 'SE', 'PL', 'HU', 'TR', 'KR', 'IN', 'TH', 'VN', 'MY', 'ID',
+  'BR', 'MX', 'ZA', 'KE', 'EG', 'BW', 'SA', 'AE', 'IL', 'RU', 'GT',
+  'NG', 'GH', 'MA', 'ET', 'PE', 'CR', 'PY', 'KZ', 'MN', 'KH', 'OM', 'AM', 'AZ', 'LA', 'MV',
+];
 
 export const CATEGORIES: CategoryDefinition[] = [
   {
@@ -81,7 +88,7 @@ export const CATEGORIES: CategoryDefinition[] = [
 ];
 
 export const QUIZZES: QuizDefinition[] = [
-  // ======================== CURRENT EVENTS (WEEKLY EDITION) ========================
+  // ======================== CURRENT EVENTS (WEEKLY + 2026 MILESTONES) ========================
   {
     id: 'cur-weekly',
     category: 'current-events',
@@ -93,6 +100,17 @@ export const QUIZZES: QuizDefinition[] = [
     estimatedCount: CURRENT_EVENTS_QUESTIONS.length,
     featured: true,
   },
+  {
+    id: 'cur-2026',
+    category: 'current-events',
+    title: '2026 Headlines & Milestones',
+    shortTitle: '2026 Year',
+    description:
+      'Major 2026 global milestones — FIFA World Cup, Milano Cortina Winter Olympics, Artemis II, Nobel Prizes, Oscars, Grammys, and championship titles.',
+    icon: 'sparkles',
+    supportsTypeIn: true,
+    estimatedCount: RECENT_HEADLINES_QUESTIONS.length,
+  },
 
   // ======================== GEOGRAPHY (6 SUB-QUIZZES) ========================
   {
@@ -100,7 +118,7 @@ export const QUIZZES: QuizDefinition[] = [
     category: 'geography',
     title: 'World Flags',
     shortTitle: 'Flags',
-    description: 'Identify 90+ crisp vector national flags — go Flag → Country, Country → Flag, or filter by continent.',
+    description: `Identify ${COUNTRIES.length} crisp vector national flags — go Flag → Country, Country → Flag, or filter by continent.`,
     icon: 'flag',
     supportsRegionFilter: true,
     supportsDirection: true,
@@ -179,7 +197,9 @@ export const QUIZZES: QuizDefinition[] = [
     icon: 'globe',
     supportsRegionFilter: true,
     supportsTypeIn: true,
-    estimatedCount: GEO_STATIC_QUESTIONS.filter((q) => q.quizId === 'geo-world-facts').length + 18,
+    estimatedCount:
+      GEO_STATIC_QUESTIONS.filter((q) => q.quizId === 'geo-world-facts').length +
+      DISTINCTIVE_CURRENCY_CODES.length,
   },
 
   // ======================== SCIENCE (3 SUB-QUIZZES) ========================
@@ -188,7 +208,7 @@ export const QUIZZES: QuizDefinition[] = [
     category: 'science',
     title: 'Periodic Table & Elements',
     shortTitle: 'Elements',
-    description: 'Decode chemical symbols, atomic numbers, and surprising properties of 46 essential elements.',
+    description: `Decode chemical symbols, atomic numbers, and surprising properties of ${ELEMENTS.length} essential elements.`,
     icon: 'atom',
     supportsDirection: true,
     directionLabels: {
@@ -356,6 +376,7 @@ export const CATEGORY_MIX_IDS: Record<CategoryId, string> = {
 
 const ALL_STATIC_SEEDS: StaticQuestionSeed[] = [
   ...CURRENT_EVENTS_QUESTIONS,
+  ...RECENT_HEADLINES_QUESTIONS,
   ...GEO_STATIC_QUESTIONS,
   ...SCIENCE_STATIC_QUESTIONS,
   ...HISTORY_STATIC_QUESTIONS,
@@ -465,13 +486,197 @@ function pickDistractors<T>(
   return chosen;
 }
 
+// ======================== FRESHNESS & HISTORY HELPERS ========================
+
+/**
+ * Maps direction-variant question IDs (e.g. `flag-std-FR` / `flag-rev-FR`) to a shared
+ * subject key so flipping direction doesn't immediately repeat the same subject.
+ */
+export function getQuestionSubjectKey(id: string): string {
+  const m = id.match(/^(flag|cap|us|el|pres)-(?:std|rev|cap|nick|fact|ord)-(.+)$/);
+  return m ? `${m[1]}:${m[2]}` : id;
+}
+
+/**
+ * Appends new question IDs to an existing ordered history (oldest -> newest),
+ * moving re-seen IDs to the newest end and capping length at `maxItems`.
+ */
+export function appendQuestionHistory(
+  existing: readonly string[],
+  newlyPlayed: readonly string[],
+  maxItems = 500
+): string[] {
+  const order: string[] = [];
+  const seenPos = new Map<string, number>();
+
+  for (const list of [existing, newlyPlayed]) {
+    for (const raw of list) {
+      const id = raw.trim();
+      if (!id) continue;
+      const prev = seenPos.get(id);
+      if (prev !== undefined) {
+        order[prev] = '';
+      }
+      seenPos.set(id, order.length);
+      order.push(id);
+    }
+  }
+
+  const compact = order.filter(Boolean);
+  return compact.length > maxItems ? compact.slice(-maxItems) : compact;
+}
+
+/**
+ * Merges multiple players' (and/or room) ordered histories (oldest -> newest) while
+ * preserving how recently ANY participant saw each question (smallest distance from end
+ * wins), returning a single oldest -> newest recency list capped at `maxItems`.
+ */
+export function mergePlayerQuestionHistories(
+  histories: readonly (readonly string[])[],
+  maxItems = 600
+): string[] {
+  const minDistFromEnd = new Map<string, number>();
+
+  for (const list of histories) {
+    const n = list.length;
+    for (let i = 0; i < n; i++) {
+      const id = list[i].trim();
+      if (!id) continue;
+      const dist = n - 1 - i; // 0 = most recently played
+      const prev = minDistFromEnd.get(id);
+      if (prev === undefined || dist < prev) {
+        minDistFromEnd.set(id, dist);
+      }
+    }
+  }
+
+  const entries = Array.from(minDistFromEnd.entries());
+  // Larger distance = older -> sort descending so oldest come first, newest come last
+  entries.sort((a, b) => b[1] - a[1]);
+  const merged = entries.map(([id]) => id);
+  return merged.length > maxItems ? merged.slice(-maxItems) : merged;
+}
+
+interface FreshnessIndex {
+  exactRank: Map<string, number>;
+  subjectRank: Map<string, number>;
+}
+
+function buildFreshnessIndex(excludeIds?: readonly string[]): FreshnessIndex {
+  const exactRank = new Map<string, number>();
+  const subjectRank = new Map<string, number>();
+  if (!excludeIds || excludeIds.length === 0) {
+    return { exactRank, subjectRank };
+  }
+
+  for (let i = 0; i < excludeIds.length; i++) {
+    const id = excludeIds[i];
+    if (!id) continue;
+    const rank = i + 1; // 1 = oldest, N = most recent
+    exactRank.set(id, rank);
+    const subj = getQuestionSubjectKey(id);
+    subjectRank.set(subj, rank);
+  }
+
+  return { exactRank, subjectRank };
+}
+
+function shuffleInRecencyBuckets<T>(
+  items: readonly T[],
+  getRank: (item: T) => number,
+  bucketSize: number,
+  rng: () => number
+): T[] {
+  if (items.length <= 1) return [...items];
+
+  // Pre-shuffle so equal ranks break ties randomly
+  const sorted = shuffleWithRng(items, rng).sort((a, b) => getRank(a) - getRank(b));
+  if (sorted.length <= 3) return sorted;
+
+  const step = Math.max(1, Math.min(bucketSize, Math.floor(sorted.length / 2)));
+  const out: T[] = [];
+  for (let i = 0; i < sorted.length; i += step) {
+    const chunk = sorted.slice(i, i + step);
+    out.push(...shuffleWithRng(chunk, rng));
+  }
+  return out;
+}
+
+function orderByFreshnessOnly(
+  pool: readonly TriviaQuestion[],
+  freshness: FreshnessIndex,
+  bucketSize: number,
+  rng: () => number
+): TriviaQuestion[] {
+  if (freshness.exactRank.size === 0) {
+    return shuffleWithRng(pool, rng);
+  }
+
+  const unseen: TriviaQuestion[] = [];
+  const siblingSeen: TriviaQuestion[] = [];
+  const exactSeen: TriviaQuestion[] = [];
+
+  for (const q of pool) {
+    if (freshness.exactRank.has(q.id)) {
+      exactSeen.push(q);
+    } else if (freshness.subjectRank.has(getQuestionSubjectKey(q.id))) {
+      siblingSeen.push(q);
+    } else {
+      unseen.push(q);
+    }
+  }
+
+  return [
+    ...shuffleWithRng(unseen, rng),
+    ...shuffleInRecencyBuckets(
+      siblingSeen,
+      (q) => freshness.subjectRank.get(getQuestionSubjectKey(q.id)) ?? 0,
+      bucketSize,
+      rng
+    ),
+    ...shuffleInRecencyBuckets(
+      exactSeen,
+      (q) => freshness.exactRank.get(q.id) ?? 0,
+      bucketSize,
+      rng
+    ),
+  ];
+}
+
+function orderPoolByFreshness(
+  pool: readonly TriviaQuestion[],
+  difficulty: DifficultyFilter,
+  freshness: FreshnessIndex,
+  bucketSize: number,
+  rng: () => number
+): TriviaQuestion[] {
+  if (difficulty === 'all') {
+    return orderByFreshnessOnly(pool, freshness, bucketSize, rng);
+  }
+
+  const exact = pool.filter((q) => q.difficulty === difficulty);
+  const others = pool.filter((q) => q.difficulty !== difficulty);
+  return [
+    ...orderByFreshnessOnly(exact, freshness, bucketSize, rng),
+    ...orderByFreshnessOnly(others, freshness, bucketSize, rng),
+  ];
+}
+
+function hasUnseenQuestion(pool: readonly TriviaQuestion[], freshness: FreshnessIndex): boolean {
+  if (freshness.exactRank.size === 0) return pool.length > 0;
+  return pool.some(
+    (q) => !freshness.exactRank.has(q.id) && !freshness.subjectRank.has(getQuestionSubjectKey(q.id))
+  );
+}
+
 // ======================== DYNAMIC GENERATORS ========================
 
 function buildFlagQuestions(
   region: ContinentFilter,
   difficulty: DifficultyFilter,
   direction: QuestionDirection,
-  rng: () => number
+  rng: () => number,
+  freshness?: FreshnessIndex
 ): TriviaQuestion[] {
   let pool = region === 'all' ? COUNTRIES : COUNTRIES.filter((c) => c.region === region);
   if (difficulty !== 'all') {
@@ -479,9 +684,14 @@ function buildFlagQuestions(
     if (exact.length >= 4) pool = exact;
   }
 
-  return pool.map((country, idx) => {
-    const useReverse =
-      direction === 'reverse' || (direction === 'mixed' && (idx % 2 === 1));
+  return pool.map((country) => {
+    let useReverse = direction === 'reverse' || (direction === 'mixed' && rng() < 0.5);
+    if (direction === 'mixed' && freshness) {
+      const stdSeen = freshness.exactRank.has(`flag-std-${country.code}`);
+      const revSeen = freshness.exactRank.has(`flag-rev-${country.code}`);
+      if (stdSeen && !revSeen) useReverse = true;
+      else if (revSeen && !stdSeen) useReverse = false;
+    }
 
     const sameRegion = COUNTRIES.filter((c) => c.region === country.region && c.code !== country.code);
     const distractors = pickDistractors(country, sameRegion, COUNTRIES, (c) => c.code, 3, rng);
@@ -537,10 +747,11 @@ function buildCapitalQuestions(
   region: ContinentFilter,
   difficulty: DifficultyFilter,
   direction: QuestionDirection,
-  rng: () => number
+  rng: () => number,
+  freshness?: FreshnessIndex
 ): TriviaQuestion[] {
   let pool = region === 'all' ? COUNTRIES : COUNTRIES.filter((c) => c.region === region);
-  // Skip Singapore in capitals quiz since country === capital
+  // Skip Singapore / Monaco in capitals quiz since country === capital
   pool = pool.filter((c) => c.name.toLowerCase() !== c.capital.toLowerCase());
   if (difficulty !== 'all') {
     const exact = pool.filter((c) => c.difficulty === difficulty);
@@ -549,9 +760,14 @@ function buildCapitalQuestions(
 
   const allValid = COUNTRIES.filter((c) => c.name.toLowerCase() !== c.capital.toLowerCase());
 
-  return pool.map((country, idx) => {
-    const useReverse =
-      direction === 'reverse' || (direction === 'mixed' && idx % 2 === 1);
+  return pool.map((country) => {
+    let useReverse = direction === 'reverse' || (direction === 'mixed' && rng() < 0.5);
+    if (direction === 'mixed' && freshness) {
+      const stdSeen = freshness.exactRank.has(`cap-std-${country.code}`);
+      const revSeen = freshness.exactRank.has(`cap-rev-${country.code}`);
+      if (stdSeen && !revSeen) useReverse = true;
+      else if (revSeen && !stdSeen) useReverse = false;
+    }
 
     const sameRegion = allValid.filter((c) => c.region === country.region && c.code !== country.code);
     const distractors = pickDistractors(country, sameRegion, allValid, (c) => c.capital, 3, rng);
@@ -601,7 +817,8 @@ function buildCapitalQuestions(
 function buildUSStateQuestions(
   difficulty: DifficultyFilter,
   direction: QuestionDirection,
-  rng: () => number
+  rng: () => number,
+  freshness?: FreshnessIndex
 ): TriviaQuestion[] {
   let pool = [...US_STATES];
   if (difficulty !== 'all') {
@@ -609,17 +826,25 @@ function buildUSStateQuestions(
     if (exact.length >= 4) pool = exact;
   }
 
-  return pool.map((st, idx) => {
-    const mode =
-      direction === 'standard'
-        ? 'capital'
-        : direction === 'reverse'
-        ? 'reverse'
-        : idx % 3 === 0
-        ? 'capital'
-        : idx % 3 === 1
-        ? 'reverse'
-        : 'nickname';
+  return pool.map((st) => {
+    let mode: 'capital' | 'reverse' | 'nickname';
+    if (direction === 'standard') {
+      mode = 'capital';
+    } else if (direction === 'reverse') {
+      mode = 'reverse';
+    } else {
+      const modes: ('capital' | 'reverse' | 'nickname')[] = ['capital', 'reverse', 'nickname'];
+      const modeIds: Record<'capital' | 'reverse' | 'nickname', string> = {
+        capital: `us-cap-${st.abbr}`,
+        reverse: `us-rev-${st.abbr}`,
+        nickname: `us-nick-${st.abbr}`,
+      };
+      const unseenModes = freshness
+        ? modes.filter((m) => !freshness.exactRank.has(modeIds[m]))
+        : modes;
+      const choices = unseenModes.length > 0 ? unseenModes : modes;
+      mode = choices[Math.floor(rng() * choices.length)];
+    }
 
     const sameRegion = US_STATES.filter((s) => s.usRegion === st.usRegion && s.abbr !== st.abbr);
     const distractors = pickDistractors(st, sameRegion, US_STATES, (s) => s.abbr, 3, rng);
@@ -694,15 +919,12 @@ function buildCurrencyBonusQuestions(
   // Countries with distinctive, memorable named currencies (skipping generic Euros / US Dollars)
   const distinctive: CountryEntry[] = COUNTRIES.filter((c) => {
     if (c.currency === 'Euro' || c.currency === 'US Dollar') return false;
-    if (c.code === 'JP') return false; // already in static facts
+    if (c.code === 'JP' || c.code === 'KW') return false; // already in static facts
     const lowerCur = c.currency.toLowerCase();
     const lowerName = c.name.toLowerCase();
     // Skip trivially guessable currencies that literally contain the country name and "Dollar"
     if (lowerCur.includes('dollar') && lowerCur.includes(lowerName.split(' ')[0])) return false;
-    return [
-      'GB', 'CH', 'SE', 'PL', 'HU', 'TR', 'KR', 'IN', 'TH', 'VN', 'MY', 'ID',
-      'BR', 'MX', 'ZA', 'KE', 'EG', 'BW', 'SA', 'AE', 'IL', 'RU', 'GT',
-    ].includes(c.code);
+    return DISTINCTIVE_CURRENCY_CODES.includes(c.code);
   });
 
   let pool = region === 'all' ? distinctive : distinctive.filter((c) => c.region === region);
@@ -738,7 +960,8 @@ function buildCurrencyBonusQuestions(
 function buildElementQuestions(
   difficulty: DifficultyFilter,
   direction: QuestionDirection,
-  rng: () => number
+  rng: () => number,
+  freshness?: FreshnessIndex
 ): TriviaQuestion[] {
   let pool = [...ELEMENTS];
   if (difficulty !== 'all') {
@@ -746,9 +969,14 @@ function buildElementQuestions(
     if (exact.length >= 4) pool = exact;
   }
 
-  return pool.map((el, idx) => {
-    const useReverse =
-      direction === 'reverse' || (direction === 'mixed' && idx % 2 === 1);
+  return pool.map((el) => {
+    let useReverse = direction === 'reverse' || (direction === 'mixed' && rng() < 0.5);
+    if (direction === 'mixed' && freshness) {
+      const stdSeen = freshness.exactRank.has(`el-std-${el.symbol}`);
+      const revSeen = freshness.exactRank.has(`el-rev-${el.symbol}`);
+      if (stdSeen && !revSeen) useReverse = true;
+      else if (revSeen && !stdSeen) useReverse = false;
+    }
     const sameGroup = ELEMENTS.filter((e) => e.group === el.group && e.number !== el.number);
     const distractors = pickDistractors(el, sameGroup, ELEMENTS, (e) => e.symbol, 3, rng);
     const allChoices = shuffleWithRng([el, ...distractors], rng);
@@ -846,7 +1074,8 @@ function formatOrdinal(n: number): string {
 function buildPresidentQuestions(
   difficulty: DifficultyFilter,
   direction: QuestionDirection,
-  rng: () => number
+  rng: () => number,
+  freshness?: FreshnessIndex
 ): TriviaQuestion[] {
   let pool = [...US_PRESIDENTS];
   if (difficulty !== 'all') {
@@ -854,9 +1083,14 @@ function buildPresidentQuestions(
     if (exact.length >= 4) pool = exact;
   }
 
-  return pool.map((pres, idx) => {
-    const useOrderMode =
-      direction === 'reverse' || (direction === 'mixed' && idx % 3 === 2);
+  return pool.map((pres) => {
+    let useOrderMode = direction === 'reverse' || (direction === 'mixed' && rng() < 1 / 3);
+    if (direction === 'mixed' && freshness) {
+      const factSeen = freshness.exactRank.has(`pres-fact-${pres.order}`);
+      const ordSeen = freshness.exactRank.has(`pres-ord-${pres.order}`);
+      if (factSeen && !ordSeen) useOrderMode = true;
+      else if (ordSeen && !factSeen) useOrderMode = false;
+    }
 
     // Prefer nearby-era presidents as plausible distractors, strictly deduplicating by full name
     const nearbyEra = US_PRESIDENTS.filter(
@@ -922,22 +1156,23 @@ function getPoolForSingleQuiz(
   region: ContinentFilter,
   difficulty: DifficultyFilter,
   direction: QuestionDirection,
-  rng: () => number
+  rng: () => number,
+  freshness?: FreshnessIndex
 ): TriviaQuestion[] {
   if (quizId === 'geo-flags') {
-    return buildFlagQuestions(region, difficulty, direction, rng);
+    return buildFlagQuestions(region, difficulty, direction, rng, freshness);
   }
   if (quizId === 'geo-capitals') {
-    return buildCapitalQuestions(region, difficulty, direction, rng);
+    return buildCapitalQuestions(region, difficulty, direction, rng, freshness);
   }
   if (quizId === 'geo-us-states') {
-    return buildUSStateQuestions(difficulty, direction, rng);
+    return buildUSStateQuestions(difficulty, direction, rng, freshness);
   }
   if (quizId === 'sci-elements') {
-    return buildElementQuestions(difficulty, direction, rng);
+    return buildElementQuestions(difficulty, direction, rng, freshness);
   }
   if (quizId === 'hist-presidents') {
-    return buildPresidentQuestions(difficulty, direction, rng);
+    return buildPresidentQuestions(difficulty, direction, rng, freshness);
   }
 
   let seeds = ALL_STATIC_SEEDS.filter((s) => s.quizId === quizId);
@@ -953,19 +1188,13 @@ function getPoolForSingleQuiz(
     questions = [...questions, ...currencyQs];
   }
 
-  if (difficulty !== 'all') {
-    const exact = questions.filter((q) => q.difficulty === difficulty);
-    const others = questions.filter((q) => q.difficulty !== difficulty);
-    // Keep exact difficulty first, fallback to others only if caller requests more than exact count
-    return [...shuffleWithRng(exact, rng), ...shuffleWithRng(others, rng)];
-  }
-
-  return shuffleWithRng(questions, rng);
+  return questions;
 }
 
 /**
  * Round-robin balanced picker across multiple sub-quiz pools so mixed modes
- * (like All Geography or All Categories) feel delightfully varied.
+ * (like All Geography or All Categories) feel varied while strictly prioritizing
+ * unseen questions first and oldest-seen questions as fallback.
  */
 function pickBalancedAcrossQuizzes(
   quizIds: string[],
@@ -973,37 +1202,65 @@ function pickBalancedAcrossQuizzes(
   region: ContinentFilter,
   difficulty: DifficultyFilter,
   direction: QuestionDirection,
-  excludeSet: Set<string>,
-  rng: () => number
+  freshness: FreshnessIndex,
+  rng: () => number,
+  preserveFreshnessOrder = false
 ): TriviaQuestion[] {
   const orderedIds = shuffleWithRng(quizIds, rng);
-  const pools = orderedIds.map((id) =>
-    shuffleWithRng(getPoolForSingleQuiz(id, region, difficulty, direction, rng), rng).filter(
-      (q) => !excludeSet.has(q.id)
+  const bucketSize = Math.max(4, Math.min(count, 10));
+
+  const rawPools = orderedIds.map((id) =>
+    orderPoolByFreshness(
+      getPoolForSingleQuiz(id, region, difficulty, direction, rng, freshness),
+      difficulty,
+      freshness,
+      bucketSize,
+      rng
     )
   );
 
-  // If difficulty was specified, prioritize exact matches at the front of each pool
-  if (difficulty !== 'all') {
-    for (let i = 0; i < pools.length; i++) {
-      const exact = pools[i].filter((q) => q.difficulty === difficulty);
-      const rest = pools[i].filter((q) => q.difficulty !== difficulty);
-      pools[i] = [...exact, ...rest];
+  // Put sub-quizzes that still have unseen questions ahead of exhausted sub-quizzes
+  const poolsWithFresh = rawPools.filter((p) => hasUnseenQuestion(p, freshness));
+  const poolsExhausted = rawPools.filter((p) => !hasUnseenQuestion(p, freshness));
+  const pools = [...poolsWithFresh, ...poolsExhausted];
+
+  const picked: TriviaQuestion[] = [];
+  const seenIds = new Set<string>();
+  let progress = true;
+
+  // Pass 1: round-robin strictly through unseen questions (respecting difficulty filter if set)
+  if (freshness.exactRank.size > 0) {
+    while (picked.length < count && progress) {
+      progress = false;
+      for (const pool of pools) {
+        if (picked.length >= count) break;
+        const freshIdx = pool.findIndex(
+          (q) =>
+            !seenIds.has(q.id) &&
+            (difficulty === 'all' || q.difficulty === difficulty) &&
+            !freshness.exactRank.has(q.id) &&
+            !freshness.subjectRank.has(getQuestionSubjectKey(q.id))
+        );
+        if (freshIdx !== -1) {
+          const [next] = pool.splice(freshIdx, 1);
+          seenIds.add(next.id);
+          picked.push(next);
+          progress = true;
+        }
+      }
     }
   }
 
-  const picked: TriviaQuestion[] = [];
-  const seen = new Set<string>();
-  let progress = true;
-
+  // Pass 2: fill any remaining slots round-robin from oldest-seen / remaining pool items
+  progress = true;
   while (picked.length < count && progress) {
     progress = false;
     for (const pool of pools) {
       if (picked.length >= count) break;
       while (pool.length > 0) {
         const next = pool.shift()!;
-        if (!seen.has(next.id)) {
-          seen.add(next.id);
+        if (!seenIds.has(next.id)) {
+          seenIds.add(next.id);
           picked.push(next);
           progress = true;
           break;
@@ -1012,7 +1269,7 @@ function pickBalancedAcrossQuizzes(
     }
   }
 
-  return shuffleWithRng(picked, rng);
+  return preserveFreshnessOrder ? picked : shuffleWithRng(picked, rng);
 }
 
 /**
@@ -1023,7 +1280,7 @@ export function generateQuizQuestions(opts: QuizGenerationOptions): TriviaQuesti
   const region = opts.region ?? 'all';
   const difficulty = opts.difficulty ?? 'all';
   const direction = opts.direction ?? 'standard';
-  const excludeSet = new Set(opts.excludeIds ?? []);
+  const freshness = buildFreshnessIndex(opts.excludeIds);
   const targetCount = Math.max(1, Math.min(opts.count, 100));
 
   // Grand mixed mode across all (or selected) categories
@@ -1034,7 +1291,7 @@ export function generateQuizQuestions(opts: QuizGenerationOptions): TriviaQuesti
         : CATEGORIES.map((c) => c.id);
     // Balance first by category, then evenly across each category's sub-quizzes
     const categoryOrder = shuffleWithRng(activeCats, rng);
-    const catPools = categoryOrder.map((catId) => {
+    const rawCatPools = categoryOrder.map((catId) => {
       const catQuizzes = getQuizzesByCategory(catId).map((q) => q.id);
       return pickBalancedAcrossQuizzes(
         catQuizzes,
@@ -1042,10 +1299,16 @@ export function generateQuizQuestions(opts: QuizGenerationOptions): TriviaQuesti
         region,
         difficulty,
         direction === 'standard' ? 'mixed' : direction,
-        excludeSet,
-        rng
+        freshness,
+        rng,
+        true // keep unseen questions strictly at the front for mixed round-robin
       );
     });
+
+    const catPools = [
+      ...rawCatPools.filter((p) => hasUnseenQuestion(p, freshness)),
+      ...rawCatPools.filter((p) => !hasUnseenQuestion(p, freshness)),
+    ];
 
     const picked: TriviaQuestion[] = [];
     const seen = new Set<string>();
@@ -1068,7 +1331,7 @@ export function generateQuizQuestions(opts: QuizGenerationOptions): TriviaQuesti
     return shuffleWithRng(picked, rng);
   }
 
-  // Category-level mix (e.g. 'geo-all', 'sci-all', 'hist-all', 'cult-all', 'gen-all')
+  // Category-level mix (e.g. 'cur-all', 'geo-all', 'sci-all', 'hist-all', 'cult-all', 'gen-all')
   const matchedCat = CATEGORIES.find((c) => CATEGORY_MIX_IDS[c.id] === opts.quizId);
   if (matchedCat) {
     const catQuizIds = getQuizzesByCategory(matchedCat.id).map((q) => q.id);
@@ -1078,29 +1341,15 @@ export function generateQuizQuestions(opts: QuizGenerationOptions): TriviaQuesti
       region,
       difficulty,
       direction,
-      excludeSet,
+      freshness,
       rng
     );
   }
 
-  // Single specific sub-quiz
-  const pool = getPoolForSingleQuiz(opts.quizId, region, difficulty, direction, rng);
-  const filtered = pool.filter((q) => !excludeSet.has(q.id));
-  const source = filtered.length >= Math.min(targetCount, 4) ? filtered : pool;
-
-  if (difficulty !== 'all') {
-    const exact = shuffleWithRng(
-      source.filter((q) => q.difficulty === difficulty),
-      rng
-    );
-    const fallback = shuffleWithRng(
-      source.filter((q) => q.difficulty !== difficulty),
-      rng
-    );
-    return [...exact, ...fallback].slice(0, targetCount);
-  }
-
-  return shuffleWithRng(source, rng).slice(0, targetCount);
+  // Single specific sub-quiz — strictly unseen first, oldest-seen fallback, then shuffled
+  const pool = getPoolForSingleQuiz(opts.quizId, region, difficulty, direction, rng, freshness);
+  const ordered = orderPoolByFreshness(pool, difficulty, freshness, targetCount, rng);
+  return shuffleWithRng(ordered.slice(0, targetCount), rng);
 }
 
 export function getTotalQuestionCount(): number {

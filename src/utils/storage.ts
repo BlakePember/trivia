@@ -29,6 +29,7 @@ const KEYS = {
   stats: 'trivia_solo_stats_v1',
   mastery: 'trivia_practice_mastery_v1',
   bookmarks: 'trivia_bookmarks_v1',
+  recentQuestions: 'trivia_recent_questions_v1',
 };
 
 const ADJECTIVES = ['Swift', 'Atlas', 'Sharp', 'Cosmic', 'Bright', 'Clever', 'Bold', 'Stellar'];
@@ -172,6 +173,27 @@ export function loadBookmarks(): string[] {
 export function saveBookmarks(ids: string[]): void {
   try {
     localStorage.setItem(KEYS.bookmarks, JSON.stringify(ids));
+  } catch {
+    // ignore
+  }
+}
+
+export function loadRecentQuestionIds(): string[] {
+  try {
+    const raw = localStorage.getItem(KEYS.recentQuestions);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed)
+      ? parsed.filter((x): x is string => typeof x === 'string').slice(-300)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveRecentQuestionIds(ids: string[]): void {
+  try {
+    localStorage.setItem(KEYS.recentQuestions, JSON.stringify(ids.slice(-300)));
   } catch {
     // ignore
   }
